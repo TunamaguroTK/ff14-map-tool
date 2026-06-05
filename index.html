@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FF14 Treasure Map Tool</title>
+
+    <script src="data.js"></script>
+
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #f39c12;
+            font-size: 28px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        h2 {
+            border-left: 5px solid #f39c12;
+            padding-left: 10px;
+            color: #f39c12;
+            font-size: 20px;
+            margin-top: 0;
+        }
+
+        .card {
+            background: #2c2c2c;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #bdc3c7;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 10px;
+            background: #383838;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #fff;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
+            border-color: #f39c12;
+            outline: none;
+        }
+
+        .btn {
+            background: #f39c12;
+            color: #1a1a1a;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #e67e22;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-secondary {
+            background: #7f8c8d;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #95a5a6;
+        }
+
+        .route-group {
+            background: #222;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .route-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+
+        .route-group-title {
+            color: #f39c12;
+            font-weight: bold;
+        }
+
+        .route-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #333;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border-left: 4px solid #f39c12;
+            transition: all 0.2s;
+        }
+
+        .route-item.done {
+            border-left-color: #2ecc71;
+            background: #252525;
+            opacity: 0.6;
+        }
+
+        .route-item.done .route-item-text {
+            text-decoration: line-through;
+            color: #777;
+        }
+
+        .route-item-text {
+            flex-grow: 1;
+            cursor: pointer;
+            position: relative;
+            padding-right: 10px;
+        }
+
+        /* ホバーで画像ポップアップ */
+        .map-popup {
+            display: none;
+            position: absolute;
+            left: 20px;
+            top: 25px;
+            z-index: 100;
+            border: 3px solid #f39c12;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .map-popup img {
+            display: block;
+            max-width: 300px;
+            height: auto;
+        }
+
+        .route-item-text:hover .map-popup {
+            display: block;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-arrow {
+            background: #444;
+            color: #fff;
+            border: none;
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-arrow:hover {
+            background: #555;
+        }
+
+        .btn-area-arrow {
+            background: #f39c12;
+            color: #1a1a1a;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .btn-area-arrow:hover {
+            background: #e67e22;
+        }
+
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+
+        .map-preview-box {
+            background: #222;
+            border: 1px dashed #444;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            color: #777;
+            min-height: 150px;
+            display: flex;
+            flex-wrap: wrap;
+            /* 画面が狭いときは縦に並ぶように */
+            gap: 15px;
+            /* 画像と画像の間のすきま */
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* プレビュー内の画像スタイル */
+        .map-preview-box .preview-img-wrapper {
+            flex: 1;
+            min-width: 200px;
+            /* 崩れない最低の横幅 */
+            max-width: 100%;
+        }
+
+        .map-preview-box img {
+            max-width: 100%;
+            max-height: 220px;
+            /* 少し大きさを調整 */
+            border-radius: 6px;
+            border: 2px solid #333;
+        }
+
+        .map-preview-box .map-label {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        /* プレビュー内の画像スタイル（基本設定） */
+        .map-preview-box .preview-img-wrapper {
+            flex: 1;
+            min-width: 200px;
+            max-width: 100%;
+            transition: all 0.2s ease;
+            /* サイズ変化を滑らかに */
+        }
+
+        /* ★ここを追加：画像が1枚だけの時は、最大横幅を大きく広げる */
+        .map-preview-box .preview-img-wrapper:only-child {
+            max-width: 500px;
+            /* 好みに合わせて 600px などに広げてもOK */
+        }
+
+        /* ★ここを追加：画像が1枚だけの時は、縦幅の制限も少し緩めて大きく見せる */
+        .map-preview-box .preview-img-wrapper:only-child img {
+            max-height: 350px;
+        }
+
+        /* ーーー 画像拡大（モーダル）のスタイル ーーー */
+        .modal-overlay {
+            display: none;
+            /* 普段は隠しておく */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            /* 背景を暗く */
+            z-index: 1000;
+            /* 一番手前に表示 */
+            align-items: center;
+            justify-content: center;
+            cursor: zoom-out;
+            /* クリックで閉じられることを示すカーソル */
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        /* モーダルが「開いている状態」 */
+        .modal-overlay.open {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* 拡大される画像 */
+        .modal-image {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border: 3px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            transform: scale(0.9);
+            transition: transform 0.2s ease;
+        }
+
+        .modal-overlay.open .modal-image {
+            transform: scale(1);
+            /* ふわっと大きく表示 */
+        }
+
+        /* クリックできる画像にカーソルを合わせたら虫眼鏡にする */
+        .zoomable-img {
+            cursor: zoom-in;
+            transition: transform 0.1s ease;
+        }
+
+        .zoomable-img:hover {
+            transform: scale(1.02);
+            /* マウスを乗せたら少しだけ浮き上がる */
+        }
+
+        .member-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        @media (min-width: 992px) {
+            .member-list {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .member-box {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            border-top: 3px solid #3498db;
+        }
+
+        .member-name {
+            font-weight: bold;
+            font-size: 16px;
+            color: #3498db;
+            margin-bottom: 10px;
+        }
+
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .item-tag {
+            background: #2980b9;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .item-tag:hover {
+            background: #c0392b;
+            text-decoration: line-through;
+        }
+
+        .danger-zone {
+            margin-top: 30px;
+            border-top: 1px dashed #555;
+            padding-top: 20px;
+        }
+
+        .danger-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* ーーー ここから追加 ーーー */
+        /* メンバーリストを横並びのグリッドに変更 */
+        .member-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+        }
+
+        /* 各メンバーの箱をコンパクトに */
+        .member-box {
+            background: #333;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border-top: 3px solid #3498db;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .member-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .member-name {
+            font-weight: bold;
+            font-size: 14px;
+            color: #3498db;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+
+        /* 入力欄とボタンを横並びにするグループ */
+        .loot-input-group {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+
+        .loot-input-group input[type="text"] {
+            padding: 6px 8px;
+            font-size: 12px;
+            height: 30px;
+            flex-grow: 1;
+        }
+
+        .loot-add-btn {
+            background: #3498db;
+            color: #fff;
+            border: none;
+            padding: 0 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            height: 30px;
+            white-space: nowrap;
+        }
+
+        .loot-add-btn:hover {
+            background: #2980b9;
+        }
+
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 4px;
+            max-height: 60px;
+            overflow-y: auto;
+            /* アイテムが増えたら箱の中でスクロール */
+        }
+
+        /* ーーー ここまで追加 ーーー */
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>FF14 Treasure Map Tool</h1>
+        <p style="text-align: center; color: #777; font-size: 14px; margin-top: -10px; margin-bottom: 20px;">
+            - Optimize Routes & Track Rare Loots -
+        </p>
+        <div class="grid">
+            <div class="card">
+                <h2>🗺️ 地図情報の登録</h2>
+
+                <div class="form-group">
+                    <label for="gradeSelect">地図のグレード</label>
+                    <select id="gradeSelect" onchange="onGradeChange()">
+                        <option value="G18">G18（黄金・魔紋）</option>
+                        <option value="G17">G17（黄金・通常）</option>
+                        <option value="G15">G15（暁月・魔紋）</option>
+                        <option value="G14" disabled>G14（暁月・通常 / 工事中）</option>
+                        <option value="G12" disabled>G12（漆黒・魔紋 / 工事中）</option>
+                        <option value="G10" disabled>G10（紅蓮・魔紋 / 工事中）</option>
+                        <option value="G8">G8（蒼天・魔紋）</option>
+                    </select>
+                </div>
+
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group">
+                        <label for="areaSelect">エリア</label>
+                        <select id="areaSelect" onchange="updateCoordinates()"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="coordSelect">最寄り座標 (X: Y:)</label>
+                        <select id="coordSelect" onchange="updateMapPreview()"></select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label>マップ位置プレビュー</label>
+                    <div id="mapImageContainer" class="map-preview-box">座標を選ぶとダミーマップが出ます</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="memberName">持ち主の名前</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="memberName" placeholder="例: Taro Yamada" list="memberListHint">
+                        <select id="memberSelect" onchange="selectExistingMember()" style="width: 160px;">
+                            <option value="">👤 選択</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="addMapToRoute()">➕ ルートに地図を追加する</button>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="margin: 0;">🗺️ 最適巡回ルート一覧</h2>
+                    <button class="delete-btn" onclick="clearAllRoute()" style="padding: 6px 12px;">全削除</button>
+                </div>
+                <p style="font-size: 12px; color: #aaa; margin-top: -10px; margin-bottom: 15px;">
+                    💡 テレポ順に自動ソートされます。項目クリックで【消化済】チェック。
+                </p>
+                <div id="routeListContainer"></div>
+                <div id="macroContainer"
+                    style="margin-top: 15px; padding: 10px; background: #222; border: 1px solid #444; border-radius: 6px; display: none;">
+                    <label style="font-size: 12px; color: #f39c12; margin-bottom: 5px;">📋 次の目的地（チャット用コピペ）</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="macroText" readonly style="font-size: 12px; padding: 6px;">
+                        <button class="loot-add-btn" onclick="copyMacroText()" style="background: #2ecc71;">コピー</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0;">🎁 レア戦利品・ドロップ記録</h2>
+                <button class="btn-arrow" onclick="clearAllItems()" style="background: #555;">アイテムメモだけリセット</button>
+            </div>
+            <div id="memberListContainer" class="member-list">
+                <p style="color: #777; text-align: center; grid-column: 1/-1;">地図を登録すると、自動でここにメンバー枠が作成されます</p>
+            </div>
+
+            <div class="danger-zone">
+                <div class="danger-grid">
+                    <button class="btn btn-danger" onclick="resetAllMembers()">👤 メンバー・アイテム履歴を全削除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let routeData = [];
+        let membersData = [];
+
+        window.onload = function () {
+            const savedRoute = localStorage.getItem("ff14_routeData");
+            const savedMembers = localStorage.getItem("ff14_membersData");
+
+            if (savedRoute) routeData = JSON.parse(savedRoute);
+            if (savedMembers) membersData = JSON.parse(savedMembers);
+
+            onGradeChange();
+            renderRoute();
+            renderMembers();
+            updateMemberSelect();
+        };
+
+        function saveToLocalStorage() {
+            localStorage.setItem("ff14_routeData", JSON.stringify(routeData));
+            localStorage.setItem("ff14_membersData", JSON.stringify(membersData));
+        }
+
+        function onGradeChange() {
+            const grade = document.getElementById("gradeSelect").value;
+            const areaSelect = document.getElementById("areaSelect");
+            areaSelect.innerHTML = "";
+
+            mapDatabase[grade].areas.forEach(area => {
+                const opt = document.createElement("option");
+                opt.value = area;
+                opt.textContent = area;
+                areaSelect.appendChild(opt);
+            });
+            updateCoordinates();
+        }
+
+        function updateCoordinates() {
+            const grade = document.getElementById("gradeSelect").value;
+            const area = document.getElementById("areaSelect").value;
+            const coordSelect = document.getElementById("coordSelect");
+            coordSelect.innerHTML = "";
+
+            if (!area || !mapDatabase[grade].coords[area]) return;
+
+            // 最初に「座標を選択してください」という空の選択肢を入れる
+            const defaultOpt = document.createElement("option");
+            defaultOpt.value = "";
+            defaultOpt.textContent = "📍 座標を選択してください";
+            coordSelect.appendChild(defaultOpt);
+
+            mapDatabase[grade].coords[area].forEach((c, idx) => {
+                const opt = document.createElement("option");
+                opt.value = idx;
+                opt.textContent = c.text;
+                coordSelect.appendChild(opt);
+            });
+
+            // エリアが選ばれたので、まず全体図だけを先行表示する
+            updateMapPreview();
+        }
+
+        function updateMapPreview() {
+            const grade = document.getElementById("gradeSelect").value;
+            const area = document.getElementById("areaSelect").value;
+            const cIdx = document.getElementById("coordSelect").value;
+
+            const container = document.getElementById("mapImageContainer");
+
+            if (!area) {
+                container.innerHTML = "エリアを選ぶと全体図が出ます";
+                return;
+            }
+
+            const areaWholeMapPath = `maps/${area}_全体図.png`;
+
+            // 【パターンA】エリアだけが選ばれていて、座標はまだ選ばれていない場合
+            if (cIdx === "") {
+                container.innerHTML = `
+                    <div class="preview-img-wrapper">
+                        <img src="${areaWholeMapPath}" class="zoomable-img" onclick="openModal('${areaWholeMapPath}')" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22><rect width=%22100%%22 height=%22100%%22 fill=%22%23222%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23555%22 font-size=%2212%22>🚧 ${area} の全体図はまだ準備中です</text></svg>';" alt="全体図">
+                        <div class="map-label">🗺️ ${area} 全体図 (クリックでさらに拡大 / 座標を選んでください)</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // 【パターンB】座標までバッチリ選ばれた場合
+            const cData = mapDatabase[grade].coords[area][cIdx];
+            const numMatch = cData.text.match(/[①-⑳]/);
+            const num = numMatch ? (numMatch[0].charCodeAt(0) - 9311) : (parseInt(cIdx) + 1);
+            const autoImgPath = `maps/${area}_${num}.png`;
+
+            container.innerHTML = `
+                <div class="preview-img-wrapper">
+                    <img src="${areaWholeMapPath}" class="zoomable-img" onclick="openModal('${areaWholeMapPath}')" onerror="this.onerror=null; this.style.display='none'; document.getElementById('wholeLabel').style.display='none';" alt="全体図">
+                    <div class="map-label" id="wholeLabel">🗺️ ${area} 全体図 (クリックで拡大)</div>
+                </div>
+                <div class="preview-img-wrapper">
+                    <img src="${autoImgPath}" 
+     onerror="this.onerror=null; this.outerHTML='<div style=&quot;color:#777; padding:40px 10px;&quot;>🚧 この座標の詳細図はまだ準備中です</div>';" 
+     alt="詳細図">
+                    <div class="map-label">📍 地図の場所（No.${num}）</div>
+                </div>
+            `;
+        }
+
+        function addMapToRoute() {
+            const grade = document.getElementById("gradeSelect").value;
+            const mName = document.getElementById("memberName").value.trim() || "名無しさん";
+            const area = document.getElementById("areaSelect").value;
+            const cIdx = document.getElementById("coordSelect").value;
+
+            if (cIdx === "" || !area) {
+                alert("座標を選択してください。");
+                return;
+            }
+
+            const cData = mapDatabase[grade].coords[area][cIdx];
+
+            const newRouteItem = {
+                id: Date.now() + Math.random(),
+                grade: grade,
+                memberName: mName,
+                area: area,
+                coordText: cData.text,
+                img: cData.img,
+                isDone: false
+            };
+
+            routeData.push(newRouteItem);
+
+            if (!membersData.some(m => m.name === mName)) {
+                membersData.push({ name: mName, items: [] });
+            }
+
+            sortRouteByAreaAndOrder();
+            renderRoute();
+            renderMembers();
+            updateMemberSelect();
+
+            document.getElementById("coordSelect").selectedIndex = 0;
+            updateMapPreview();
+        }
+
+        function selectExistingMember() {
+            const s = document.getElementById("memberSelect").value;
+            if (s) document.getElementById("memberName").value = s;
+        }
+
+        function updateMemberSelect() {
+            const select = document.getElementById("memberSelect");
+            select.innerHTML = '<option value="">👤 選択</option>';
+            membersData.forEach(m => {
+                const opt = document.createElement("option");
+                opt.value = m.name;
+                opt.textContent = m.name;
+                select.appendChild(opt);
+            });
+        }
+
+        function sortRouteByAreaAndOrder() {
+            const gradePriority = ["G18", "G17", "G15", "G14", "G12", "G10", "G8"];
+
+            routeData.sort((a, b) => {
+                const gA = gradePriority.indexOf(a.grade);
+                const gB = gradePriority.indexOf(b.grade);
+                if (gA !== gB) return gA - gB;
+
+                const areaList = mapDatabase[a.grade].areas;
+                const aAreaIdx = areaList.indexOf(a.area);
+                const bAreaIdx = areaList.indexOf(b.area);
+                if (aAreaIdx !== bAreaIdx) return aAreaIdx - bAreaIdx;
+
+                return a.id - b.id;
+            });
+        }
+
+        function renderRoute() {
+            saveToLocalStorage(); // ルートが変わるたびに自動保存
+            updateMacroArea();    // マクロ表示を更新
+            const container = document.getElementById("routeListContainer");
+            container.innerHTML = "";
+
+            if (routeData.length === 0) {
+                container.innerHTML = '<p style="color: #777; text-align: center;">まだ地図が登録されていません</p>';
+                return;
+            }
+
+            let currentGroupKey = "";
+            let currentGroupDiv = null;
+
+            routeData.forEach((item, index) => {
+                const groupKey = `${item.grade} - ${item.area}`;
+
+                if (currentGroupKey !== groupKey) {
+                    currentGroupKey = groupKey;
+                    currentGroupDiv = document.createElement("div");
+                    currentGroupDiv.className = "route-group";
+                    currentGroupDiv.innerHTML = `
+                        <div class="route-group-header">
+                            <span class="route-group-title">【${item.grade}】${item.area}</span>
+                            <div class="action-btns">
+                                <button class="btn-area-arrow" onclick="moveAreaGroup(${index}, -1)">▲ 一括上</button>
+                                <button class="btn-area-arrow" onclick="moveAreaGroup(${index}, 1)">▼ 一括下</button>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(currentGroupDiv);
+                }
+
+                // ーーー ここから修正（ポップアップ画像も日本語名に対応させる） ーーー
+                // ① 丸数字から数字だけを抜き出す
+                const numMatch = item.coordText.match(/[①-⑳]/);
+                const num = numMatch ? (numMatch[0].charCodeAt(0) - 9311) : 1;
+
+                // ② 自動計算した日本語の画像パス
+                const autoImgPath = `maps/${item.area}_${num}.png`;
+                // ーーー ここまで修正 ーーー
+
+                const itemDiv = document.createElement("div");
+                itemDiv.className = `route-item ${item.isDone ? 'done' : ''}`;
+
+                const textSpan = document.createElement("span");
+                textSpan.className = "route-item-text";
+
+                // ーーー ここも修正（imgのsrcに日本語パスを指定し、エラーなら初期パスに逃げる） ーーー
+                textSpan.innerHTML = `
+                    <strong>[${item.memberName}]</strong> ${item.coordText}
+                    <div class="map-popup">
+                        <img src="${autoImgPath}" onerror="this.onerror=null; this.src='${item.img}';">
+                    </div>
+                `;
+                // ーーー ここまで ーーー
+
+                textSpan.onclick = () => toggleRouteDone(index);
+
+                const btnsDiv = document.createElement("div");
+                btnsDiv.className = "action-btns";
+                btnsDiv.innerHTML = `
+                    <button class="btn-arrow" onclick="moveRouteItem(${index}, -1); event.stopPropagation();">▲</button>
+                    <button class="btn-arrow" onclick="moveRouteItem(${index}, 1); event.stopPropagation();">▼</button>
+                    <button class="delete-btn" onclick="deleteRouteItem(${index}); event.stopPropagation();">✕</button>
+                `;
+
+                itemDiv.appendChild(textSpan);
+                itemDiv.appendChild(btnsDiv);
+                currentGroupDiv.appendChild(itemDiv);
+            });
+        }
+
+        function toggleRouteDone(idx) {
+            routeData[idx].isDone = !routeData[idx].isDone;
+            renderRoute();
+        }
+
+        function moveRouteItem(idx, direction) {
+            const targetIdx = idx + direction;
+            if (targetIdx < 0 || targetIdx >= routeData.length) return;
+
+            const temp = routeData[idx];
+            routeData[idx] = routeData[targetIdx];
+            routeData[targetIdx] = temp;
+
+            renderRoute();
+        }
+
+        function moveAreaGroup(idx, direction) {
+            const targetItem = routeData[idx];
+            const targetGrade = targetItem.grade;
+            const targetArea = targetItem.area;
+
+            const groupItems = routeData.filter(item => item.grade === targetGrade && item.area === targetArea);
+            const otherItems = routeData.filter(item => !(item.grade === targetGrade && item.area === targetArea));
+
+            let insertIdx = 0;
+            if (direction === -1) {
+                const firstCurrentIdx = routeData.findIndex(item => item.grade === targetGrade && item.area === targetArea);
+                if (firstCurrentIdx === 0) return;
+
+                const prevItem = routeData[firstCurrentIdx - 1];
+                insertIdx = otherItems.findIndex(item => item.grade === prevItem.grade && item.area === prevItem.area);
+            } else {
+                let lastCurrentIdx = -1;
+                for (let i = routeData.length - 1; i >= 0; i--) {
+                    if (routeData[i].grade === targetGrade && routeData[i].area === targetArea) {
+                        lastCurrentIdx = i;
+                        break;
+                    }
+                }
+                if (lastCurrentIdx === routeData.length - 1) return;
+
+                const nextItem = routeData[lastCurrentIdx + 1];
+                const nextGroupCount = otherItems.filter(item => item.grade === nextItem.grade && item.area === nextItem.area).length;
+                const nextGroupFirstIdx = otherItems.findIndex(item => item.grade === nextItem.grade && item.area === nextItem.area);
+                insertIdx = nextGroupFirstIdx + nextGroupCount;
+            }
+
+            otherItems.splice(insertIdx, 0, ...groupItems);
+            routeData = otherItems;
+
+            renderRoute();
+        }
+
+        function deleteRouteItem(idx) {
+            routeData.splice(idx, 1);
+            renderRoute();
+        }
+
+        function clearAllRoute() {
+            if (confirm("巡回ルートをすべてクリアしますか？")) {
+                routeData = [];
+                renderRoute();
+            }
+        }
+        // メンバーリストの表示処理（手入力＋自動記憶ドロップダウン版）
+        function renderMembers() {
+            saveToLocalStorage();
+            const container = document.getElementById("memberListContainer");
+            container.innerHTML = "";
+
+            if (membersData.length === 0) {
+                container.innerHTML = '<p style="color: #777; text-align: center; grid-column: 1/-1; padding: 20px 0;">地図を登録すると、自動でここにメンバー枠が作成されます</p>';
+                return;
+            }
+
+            // アイテム記憶用の共通データリスト（ブラウザのサジェスト機能）を作成
+            // ※これまでに登録されたすべてのアイテムを重複なしでリスト化します
+            const allSavedItems = new Set();
+            membersData.forEach(m => m.items.forEach(item => allSavedItems.add(item)));
+
+            const datalist = document.createElement("datalist");
+            datalist.id = "savedLootItems";
+            allSavedItems.forEach(item => {
+                const option = document.createElement("option");
+                option.value = item;
+                datalist.appendChild(option);
+            });
+            container.appendChild(datalist);
+
+            membersData.forEach((member, mIdx) => {
+                const box = document.createElement("div");
+                box.className = "member-box";
+
+                // ヘッダー部分（名前）
+                const header = document.createElement("div");
+                header.className = "member-header";
+                header.innerHTML = `
+    <div class="member-name" title="${member.name}">👤 ${member.name}</div>
+    <button class="delete-btn" onclick="deleteMember(${mIdx})" style="padding: 3px 8px; font-size: 11px;">✕</button>
+`;
+                // 入力欄と追加ボタンのグループ
+                const inputGroup = document.createElement("div");
+                inputGroup.className = "loot-input-group";
+
+                const input = document.createElement("input");
+                input.type = "text";
+                input.placeholder = "手入力 or クリックで履歴選択";
+                input.id = `lootInput-${mIdx}`;
+                input.setAttribute("list", "savedLootItems"); // 記憶リストと紐付け
+
+                // エンターキーでも追加できるようにする
+                input.onkeydown = (e) => {
+                    if (e.key === "Enter") {
+                        handleLootAdd(mIdx);
+                    }
+                };
+
+                const addBtn = document.createElement("button");
+                addBtn.className = "loot-add-btn";
+                addBtn.textContent = "追加";
+                addBtn.onclick = () => handleLootAdd(mIdx);
+
+                inputGroup.appendChild(input);
+                inputGroup.appendChild(addBtn);
+
+                // 獲得したアイテムのバッジ置き場
+                const tagContainer = document.createElement("div");
+                tagContainer.className = "tag-container";
+
+                member.items.forEach((item, iIdx) => {
+                    const tag = document.createElement("span");
+                    tag.className = "item-tag";
+                    tag.textContent = item;
+                    tag.style.cursor = "pointer";
+                    tag.title = "クリックで削除";
+                    tag.onclick = () => removeLootFromMember(mIdx, iIdx);
+                    tagContainer.appendChild(tag);
+                });
+
+                box.appendChild(header);
+                box.appendChild(inputGroup);
+                box.appendChild(tagContainer);
+                container.appendChild(box);
+            });
+        }
+        // ーーー ここから追加 ーーー
+        // 打ち込まれた文字を読み取ってアイテムを追加する関数（記憶連動版）
+        function handleLootAdd(mIdx) {
+            const input = document.getElementById(`lootInput-${mIdx}`);
+            const value = input.value.trim();
+            if (value) {
+                // 先にデータを追加
+                membersData[mIdx].items.push(value);
+                input.value = ""; // 入力欄を空にする
+
+                // 記憶リストのドロップダウンと画面のタグを両方最新にする
+                renderMembers();
+
+                // 次の入力がしやすいようにカーソルを戻す
+                document.getElementById(`lootInput-${mIdx}`).focus();
+            }
+        }
+
+        function addLootToMember(mIdx, item) {
+            membersData[mIdx].items.push(item);
+            renderMembers();
+        }
+
+        function removeLootFromMember(mIdx, iIdx) {
+            membersData[mIdx].items.splice(iIdx, 1);
+            renderMembers();
+        }
+
+        function clearAllItems() {
+            membersData.forEach(m => m.items = []);
+            renderMembers();
+        }
+
+        function deleteMember(mIdx) {
+            if (confirm(`${membersData[mIdx].name} さんをメンバー一覧から削除しますか？`)) {
+                membersData.splice(mIdx, 1);
+                renderMembers();
+                updateMemberSelect();
+            }
+        }
+
+        function resetAllMembers() {
+            if (confirm("獲得アイテムの履歴とメンバー一覧をすべてクリアしますか？")) {
+                membersData = [];
+                renderMembers();
+                updateMemberSelect();
+            }
+        }
+        // ーーー ここから追加 ーーー
+        // 次に行く場所のチャット用テキストを自動更新する関数
+        function updateMacroArea() {
+            const macroContainer = document.getElementById("macroContainer");
+            const macroText = document.getElementById("macroText");
+
+            // まだ消化していない（isDoneがfalse）最初の地図を探す
+            const nextMap = routeData.find(item => !item.isDone);
+
+            if (!nextMap) {
+                macroContainer.style.display = "none";
+                return;
+            }
+
+            // ーーー ここを差し替え ーーー
+            // 前にどんな番号があっても無視して、後ろの「X:〜 Y:〜」の部分だけを自動で抜き出す
+            const match = nextMap.coordText.match(/(X\s*:\s*\d+\.\d+\s*Y\s*:\s*\d+\.\d+)/i);
+            const coordClean = match ? match[0] : nextMap.coordText;
+            // ーーー ここまで ーーー
+
+            // チャットに貼り付けた時にゲーム内で旗(Flag)になる形式に変形
+            // 例: [Taro] G18: ヘリテージファウンド ( X:11.2 Y:22.3 )
+            macroText.value = `【次】[${nextMap.memberName}] ${nextMap.grade}：${nextMap.area} ( ${coordClean} )`;
+            macroContainer.style.display = "block";
+        }
+
+        // ボタンを押した時にワンクリックでコピーする関数
+        function copyMacroText() {
+            const macroText = document.getElementById("macroText");
+            macroText.select();
+            document.execCommand("copy");
+
+            // コピー成功したよと一瞬ボタンを変える演出
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = "OK!";
+            btn.style.background = "#27ae60";
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = "#2ecc71";
+            }, 1000);
+        }
+
+        // ーーー 画像拡大モーダルの制御 ーーー
+        function openModal(imgSrc) {
+            const modal = document.getElementById("imageModal");
+            const modalImg = document.getElementById("modalImg");
+
+            modalImg.src = imgSrc;
+            modal.classList.add("open");
+        }
+
+        function closeModal() {
+            const modal = document.getElementById("imageModal");
+            modal.classList.remove("open");
+        }
+
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") {
+                closeModal();
+            }
+        });
+
+    </script>
+    <footer
+        style="margin-top: 40px; padding: 20px 0; text-align: center; color: #666; font-size: 11px; border-top: 1px solid #333; line-height: 1.8;">
+        <p style="margin: 0;">記載されている会社名・製品名・システム名などは、各社の商標、または登録商標です。</p>
+        <p style="margin: 2px 0 0 0;">(C) SQUARE ENIX</p>
+    </footer>
+    </div>
+    <div id="imageModal" class="modal-overlay" onclick="closeModal()">
+        <img id="modalImg" class="modal-image" src="" alt="拡大図">
+    </div>
+</body>
+</body>
+
+</html>
