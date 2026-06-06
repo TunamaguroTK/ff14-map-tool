@@ -663,7 +663,7 @@
                 return;
             }
 
-            const areaWholeMapPath = `maps/${area}_全体図.png`;
+            const areaWholeMapPath = `maps/${grade}/${area}_全体図.png`;
 
             // 【パターンA】エリアだけが選ばれていて、座標はまだ選ばれていない場合
             if (cIdx === "") {
@@ -680,7 +680,7 @@
             const cData = mapDatabase[grade].coords[area][cIdx];
             const numMatch = cData.text.match(/[①-⑳]/);
             const num = numMatch ? (numMatch[0].charCodeAt(0) - 9311) : (parseInt(cIdx) + 1);
-            const autoImgPath = `maps/${area}_${num}.png`;
+            const autoImgPath = `maps/${grade}/${area}_${num}.png`;
 
             container.innerHTML = `
                 <div class="preview-img-wrapper">
@@ -806,7 +806,7 @@
                 const num = numMatch ? (numMatch[0].charCodeAt(0) - 9311) : 1;
 
                 // ② 自動計算した日本語の画像パス
-                const autoImgPath = `maps/${item.area}_${num}.png`;
+                const autoImgPath = `maps/${item.grade}/${item.area}_${num}.png`;
                 // ーーー ここまで修正 ーーー
 
                 const itemDiv = document.createElement("div");
