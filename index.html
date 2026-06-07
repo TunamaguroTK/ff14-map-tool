@@ -5,9 +5,9 @@
     <meta name="google-site-verification" content="GQ8D2uWjQnfCywAEsco3Ef_1_R_dys_QlguI6Y17JVI" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FF14 Treasure Map Tool</title>
+    <title>FF14 地図PT管理ツール | 黄金のレガシー対応 G8～G18</title>
 
-    <meta name="description" content="FF14宝の地図向けの巡回ルート作成・地図管理・画像プレビュー対応ツール">
+    <meta name="description" content="FF14の宝の地図PT向け管理ツール。G8～G18対応。地図画像確認、ルート管理、メンバー管理が可能。">
     <meta name="keywords" content="FF14,FFXIV,宝の地図,G18,G17,G15,G14,G12,G10,G8,座標,地図">
     <meta name="robots" content="index,follow">
 
@@ -565,8 +565,22 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h2 style="margin: 0;">🗺️ 最適巡回ルート一覧</h2>
-                    <button class="delete-btn" onclick="clearAllRoute()" style="padding: 6px 12px;">全削除</button>
+
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-arrow" onclick="exportBackup()">💾保存</button>
+
+                        <button class="btn-arrow" onclick="document.getElementById('importBackupFile').click();">
+                            📂読込
+                        </button>
+
+                        <button class="delete-btn" onclick="clearAllRoute()" style="padding: 6px 12px;">
+                            全削除
+                        </button>
+                    </div>
                 </div>
+
+                <input type="file" id="importBackupFile" accept=".json" onchange="importBackup(event)"
+                    style="display:none;">
                 <p style="font-size: 12px; color: #aaa; margin-top: -10px; margin-bottom: 15px;">
                     💡 テレポ順に自動ソートされます。項目クリックで【消化済】チェック。
                 </p>
@@ -1099,6 +1113,79 @@
             modal.classList.remove("open");
         }
 
+        function exportBackup() {
+
+            const backupData = {
+                version: "1.0.0",
+                exportDate: new Date().toISOString(),
+                routeData: routeData,
+                membersData: membersData
+            };
+
+            const blob = new Blob(
+                [JSON.stringify(backupData, null, 2)],
+                { type: "application/json" }
+            );
+
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+
+            a.href = url;
+
+            const today = new Date()
+                .toISOString()
+                .slice(0, 10);
+
+            a.download = `ff14-map-backup-${today}.json`;
+
+            a.click();
+
+            URL.revokeObjectURL(url);
+        }
+
+        function importBackup(event) {
+
+            const file = event.target.files[0];
+
+            if (!file) return;
+
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+
+                try {
+
+                    const data = JSON.parse(e.target.result);
+
+                    if (!data.routeData || !data.membersData) {
+                        alert("バックアップ形式が違います");
+                        return;
+                    }
+
+                    if (!confirm("現在のデータを上書きして復元しますか？")) {
+                        return;
+                    }
+
+                    routeData = data.routeData;
+                    membersData = data.membersData;
+
+                    saveToLocalStorage();
+
+                    renderRoute();
+                    renderMembers();
+                    updateMemberSelect();
+
+                    alert("復元完了");
+
+                } catch (err) {
+                    alert("JSON読み込み失敗");
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
         document.addEventListener("keydown", function (e) {
             if (e.key === "Escape") {
                 closeModal();
@@ -1111,11 +1198,33 @@
         <h3>更新履歴</h3>
 
         <p>
-            <strong>Ver 1.0.0</strong><br>
+            <strong>Ver 1.1.0</strong><br>
             ・G8～G18 全グレード対応<br>
             ・画像プレビュー対応<br>
             ・ルート管理機能追加<br>
             ・メンバー管理機能追加
+            ・JSONバックアップ機能追加
+            ・JSON復元機能追加
+        </p>
+    </div>
+
+    <div style="margin-top:20px; padding:15px; border:1px solid #444; border-radius:8px;">
+        <h3>このツールについて</h3>
+
+        <p>
+            FF14の宝の地図PT向けに作成した管理ツールです。
+        </p>
+
+        <p>
+            G8・G10・G12・G14・G15・G17・G18の地図に対応しています。
+        </p>
+
+        <p>
+            地図画像の確認、ルート管理、メンバー管理が行えます。
+        </p>
+
+        <p>
+            FCイベントやLSの地図会、野良PTでの進行管理に利用できます。
         </p>
     </div>
 
